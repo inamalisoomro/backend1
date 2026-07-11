@@ -20,22 +20,26 @@ app.get('/', (req, res) => {
 })
 
 
+// Middleware to ensure database connection is established before processing requests (critical for Vercel serverless functions)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection middleware error:", error);
+    res.status(500).json({ message: "Database connection failed", error: error.message });
+  }
+});
+
 // routes
 app.use('/api/v1' , todosRoutes)
 app.use('/api/v1' , usersRoutes)
 
-// Connect DB
-connectDB()
-  .then(() => {
-    // Only start server listening if run directly (not as a Vercel serverless function)
-    if (process.env.NODE_ENV !== 'production') {
-      app.listen(port || 3000, () => {
-        console.log(`⚙️  Server is running at port : ${port || 3000}`);
-      });
-    }
-  })
-  .catch((err) => {
-    console.log("MONGO DB connection failed !!! ", err);
+// For local development, start the server listening
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port || 3000, () => {
+    console.log(`⚙️  Server is running at port : ${port || 3000}`);
   });
+}
 
 export default app;
